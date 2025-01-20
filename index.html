@@ -42,26 +42,8 @@
         <h5 id="current-time"></h5>
     </div>
 
-    <div class="row justify-content-center">
-        <!-- NYSE Market Card -->
-        <div class="col-md-6">
-            <div class="card market-card p-3 mb-4">
-                <h4 class="mb-3"><i class="fas fa-building"></i> NYSE</h4>
-                <p class="market-status"><span id="nyse-status"></span></p>
-                <p class="text-muted"><span id="nyse-message"></span></p>
-                <p class="text-muted"><span id="nyse-absolute"></span></p>
-            </div>
-        </div>
-
-        <!-- TASE Market Card -->
-        <div class="col-md-6">
-            <div class="card market-card p-3 mb-4">
-                <h4 class="mb-3"><i class="fas fa-landmark"></i> TASE</h4>
-                <p class="market-status"><span id="tase-status"></span></p>
-                <p class="text-muted"><span id="tase-message"></span></p>
-                <p class="text-muted"><span id="tase-absolute"></span></p>
-            </div>
-        </div>
+    <div class="row justify-content-center" id="market-cards">
+        <!-- Market Cards will be dynamically inserted here -->
     </div>
 </div>
 
@@ -104,28 +86,41 @@
         const now = new Date();
         document.getElementById('current-time').textContent = now.toLocaleTimeString("en-US", { timeZone: "Asia/Jerusalem" });
 
-        // NYSE Market Status
-        const nyseOpen = isMarketOpen(now, "NYSE");
-        document.getElementById('nyse-status').innerHTML = getStatusHTML(nyseOpen);
-        const { message, absoluteTime } = getMarketMessage(now, "NYSE");
-        document.getElementById('nyse-message').textContent = message;
-        document.getElementById('nyse-absolute').textContent = absoluteTime;
+        const nyseData = getMarketData(now, "NYSE");
+        const taseData = getMarketData(now, "TASE");
 
-        // TASE Market Status
-        const taseOpen = isMarketOpen(now, "TASE");
-        document.getElementById('tase-status').innerHTML = getStatusHTML(taseOpen);
-        const { message: taseMessage, absoluteTime: taseAbsoluteTime } = getMarketMessage(now, "TASE");
-        document.getElementById('tase-message').textContent = taseMessage;
-        document.getElementById('tase-absolute').textContent = taseAbsoluteTime;
+        const markets = [nyseData, taseData].sort((a, b) => a.timeUntilOpen - b.timeUntilOpen);
 
-        // Display holiday message if today is a holiday
-        const dateString = now.toISOString().split('T')[0];
-        if (nyseHolidays[dateString]) {
-            document.getElementById('nyse-message').textContent += ` (Closed for ${nyseHolidays[dateString]})`;
-        }
-        if (taseHolidays[dateString]) {
-            document.getElementById('tase-message').textContent += ` (Closed for ${taseHolidays[dateString]})`;
-        }
+        const marketCards = markets.map(market => `
+            <div class="col-md-6">
+                <div class="card market-card p-3 mb-4">
+                    <h4 class="mb-3"><i class="fas fa-${market.icon}"></i> ${market.name}</h4>
+                    <p class="market-status"><span id="${market.id}-status">${market.statusHTML}</span></p>
+                    <p class="text-muted"><span id="${market.id}-message">${market.message}</span></p>
+                    <p class="text-muted"><span id="${market.id}-absolute">${market.absoluteTime}</span></p>
+                </div>
+            </div>
+        `).join('');
+
+        document.getElementById('market-cards').innerHTML = marketCards;
+    }
+
+    function getMarketData(date, market) {
+        const isOpen = isMarketOpen(date, market);
+        const { message, absoluteTime, timeUntilOpen } = getMarketMessage(date, market);
+        const icon = market === "NYSE" ? "building" : "landmark";
+        const name = market === "NYSE" ? "NYSE" : "TASE";
+        const id = market.toLowerCase();
+
+        return {
+            name,
+            icon,
+            id,
+            statusHTML: getStatusHTML(isOpen),
+            message,
+            absoluteTime,
+            timeUntilOpen
+        };
     }
 
     function isMarketOpen(date, market) {
@@ -167,7 +162,7 @@
         const absoluteTime = `Opens at ${convertToJerusalemTime(nextOpen).toLocaleTimeString("en-US", LOCALE_TIME_SETTINGS)} on ${convertToJerusalemTime(nextOpen).toLocaleDateString("en-GB", { timeZone: "Asia/Jerusalem", dateStyle: "short" })}`;
         const message = `Opens in ${Math.floor(timeUntilOpen / 60)}h ${Math.floor(timeUntilOpen % 60)}m`;
 
-        return { message, absoluteTime };
+        return { message, absoluteTime, timeUntilOpen };
     }
 
     function convertToJerusalemTime(date) {
