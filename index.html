@@ -121,10 +121,10 @@
         // Display holiday message if today is a holiday
         const dateString = now.toISOString().split('T')[0];
         if (nyseHolidays[dateString]) {
-            document.getElementById('nyse-message').textContent = `Closed for ${nyseHolidays[dateString]}`;
+            document.getElementById('nyse-message').textContent += ` (Closed for ${nyseHolidays[dateString]})`;
         }
         if (taseHolidays[dateString]) {
-            document.getElementById('tase-message').textContent = `Closed for ${taseHolidays[dateString]}`;
+            document.getElementById('tase-message').textContent += ` (Closed for ${taseHolidays[dateString]})`;
         }
     }
 
@@ -164,7 +164,7 @@
         }
 
         const timeUntilOpen = (nextOpen - date) / (1000 * 60);
-        const absoluteTime = `Opens at ${convertToJerusalemTime(nextOpen).toLocaleTimeString("en-US", LOCALE_TIME_SETTINGS)} on ${convertToJerusalemTime(nextOpen).toLocaleDateString("en-US", { timeZone: "Asia/Jerusalem", dateStyle: "short" })}`;
+        const absoluteTime = `Opens at ${convertToJerusalemTime(nextOpen).toLocaleTimeString("en-US", LOCALE_TIME_SETTINGS)} on ${convertToJerusalemTime(nextOpen).toLocaleDateString("en-GB", { timeZone: "Asia/Jerusalem", dateStyle: "short" })}`;
         const message = `Opens in ${Math.floor(timeUntilOpen / 60)}h ${Math.floor(timeUntilOpen % 60)}m`;
 
         return { message, absoluteTime };
