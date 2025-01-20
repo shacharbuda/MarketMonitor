@@ -70,8 +70,33 @@
 
 <script>
     // NYSE & TASE Holidays (2025-2030)
-    const nyseHolidays = ["2025-01-01", "2025-01-20", "2025-02-17", "2025-04-18", "2025-05-26", "2025-06-19", "2025-07-04", "2025-09-01", "2025-11-27", "2025-12-25"];
-    const taseHolidays = ["2025-03-14", "2025-04-13", "2025-04-14", "2025-04-20", "2025-05-14", "2025-06-02", "2025-07-27", "2025-09-24", "2025-09-25", "2025-09-26"];
+    const nyseHolidays = {
+        "2025-01-01": "New Year's Day",
+        "2025-01-20": "Martin Luther King Jr. Day",
+        "2025-02-17": "Presidents' Day",
+        "2025-04-18": "Good Friday",
+        "2025-05-26": "Memorial Day",
+        "2025-06-19": "Juneteenth National Independence Day",
+        "2025-07-04": "Independence Day",
+        "2025-09-01": "Labor Day",
+        "2025-11-27": "Thanksgiving Day",
+        "2025-12-25": "Christmas Day",
+        // Add more holidays until 2030
+    };
+
+    const taseHolidays = {
+        "2025-03-14": "Purim",
+        "2025-04-13": "Passover",
+        "2025-04-14": "Passover",
+        "2025-04-20": "Passover",
+        "2025-05-14": "Independence Day",
+        "2025-06-02": "Shavuot",
+        "2025-07-27": "Tisha B'Av",
+        "2025-09-24": "Yom Kippur",
+        "2025-09-25": "Yom Kippur",
+        "2025-09-26": "Sukkot",
+        // Add more holidays until 2030
+    };
 
     function updateMarketStatus() {
         const now = new Date();
@@ -90,21 +115,30 @@
         const { message: taseMessage, absoluteTime: taseAbsoluteTime } = getMarketMessage(now, "TASE");
         document.getElementById('tase-message').textContent = taseMessage;
         document.getElementById('tase-absolute').textContent = taseAbsoluteTime;
+
+        // Display holiday message if today is a holiday
+        const dateString = now.toISOString().split('T')[0];
+        if (nyseHolidays[dateString]) {
+            document.getElementById('nyse-message').textContent = `Closed for ${nyseHolidays[dateString]}`;
+        }
+        if (taseHolidays[dateString]) {
+            document.getElementById('tase-message').textContent = `Closed for ${taseHolidays[dateString]}`;
+        }
     }
 
     function isMarketOpen(date, market) {
         const day = date.getDay();
-        const hours = date.getHours();
-        const minutes = date.getMinutes();
+        const hours = date.getUTCHours();
+        const minutes = date.getUTCMinutes();
         const currentTime = hours * 60 + minutes;
         const dateString = date.toISOString().split('T')[0];
 
         if (market === "NYSE") {
-            if (nyseHolidays.includes(dateString) || day === 0 || day === 6) return false;
-            return currentTime >= 570 && currentTime < 960;
+            if (nyseHolidays[dateString] || day === 0 || day === 6) return false;
+            return currentTime >= 870 && currentTime < 1260; // 14:30 - 21:00 UTC (9:30 AM - 4:00 PM NY time)
         } else if (market === "TASE") {
-            if (taseHolidays.includes(dateString) || day === 5 || day === 6) return false;
-            return currentTime >= 540 && currentTime < 990;
+            if (taseHolidays[dateString] || day === 5 || day === 6) return false;
+            return currentTime >= 420 && currentTime < 925; // 7:00 - 15:25 UTC (9:00 AM - 5:25 PM Israel time)
         }
         return false;
     }
@@ -114,20 +148,28 @@
     }
 
     function getMarketMessage(date, market) {
-        const openingTime = market === "NYSE" ? 570 : 540;
-        const closingTime = market === "NYSE" ? 960 : 990;
+        const openingTime = market === "NYSE" ? 870 : 420;
+        const closingTime = market === "NYSE" ? 1260 : 925;
         let nextOpen = new Date(date);
-        nextOpen.setHours(Math.floor(openingTime / 60), openingTime % 60, 0, 0);
+        nextOpen.setUTCHours(Math.floor(openingTime / 60), openingTime % 60, 0, 0);
+
+        if (date.getUTCHours() * 60 + date.getUTCMinutes() >= closingTime) {
+            nextOpen.setDate(nextOpen.getDate() + 1);
+        }
         
         while (!isMarketOpen(nextOpen, market)) {
             nextOpen.setDate(nextOpen.getDate() + 1);
         }
 
         const timeUntilOpen = (nextOpen - date) / (1000 * 60);
-        const absoluteTime = `Opens at ${nextOpen.toLocaleTimeString("en-US", { timeZone: "Asia/Jerusalem" })} on ${nextOpen.toLocaleDateString("en-US", { timeZone: "Asia/Jerusalem" })}`;
+        const absoluteTime = `Opens at ${convertToJerusalemTime(nextOpen).toLocaleTimeString("en-US", { timeZone: "Asia/Jerusalem" })} on ${convertToJerusalemTime(nextOpen).toLocaleDateString("en-US", { timeZone: "Asia/Jerusalem" })}`;
         const message = `Opens in ${Math.floor(timeUntilOpen / 60)}h ${Math.floor(timeUntilOpen % 60)}m`;
 
         return { message, absoluteTime };
+    }
+
+    function convertToJerusalemTime(date) {
+        return new Date(date.toLocaleString("en-US", { timeZone: "Asia/Jerusalem" }));
     }
 
     setInterval(updateMarketStatus, 1000);
