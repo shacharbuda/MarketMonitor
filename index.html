@@ -4,190 +4,222 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Market Status Monitor</title>
-
-    <!-- Favicon -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
-
-    <!-- Bootstrap CSS (CDN) -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    
-    <!-- FontAwesome for Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
     <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .market-card {
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        }
         .status-indicator {
             width: 12px;
             height: 12px;
             border-radius: 50%;
             display: inline-block;
+            margin-right: 8px;
         }
-        .market-status {
-            font-weight: bold;
+        .market-card {
+            transition: all 0.3s ease;
         }
-        .text-muted {
-            font-size: 0.9rem;
+        .market-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .market-info {
+            font-size: 0.95rem;
+        }
+        .time-zone {
+            font-size: 0.85rem;
+            color: #666;
         }
     </style>
 </head>
-<body>
-
-<div class="container mt-5">
-    <div class="text-center mb-4">
-        <h2><i class="fas fa-clock"></i> Market Status Monitor</h2>
-        <p class="text-muted">All times in Jerusalem (Updated every second)</p>
-        <h5 id="current-time"></h5>
+<body class="bg-light">
+    <div class="container py-4">
+        <h4 class="mb-4">
+            <i class="fas fa-globe me-2"></i>
+            Market Status Monitor
+        </h4>
+        <div class="row" id="marketsContainer">
+            <!-- Markets will be dynamically inserted here -->
+        </div>
     </div>
 
-    <div class="row justify-content-center" id="market-cards">
-        <!-- Market Cards will be dynamically inserted here -->
-    </div>
-</div>
+    <script>
+        const nyseHolidays = [
+            { date: '2025-01-01', name: "New Year's Day" },
+            { date: '2025-01-20', name: "Martin Luther King Jr. Day" },
+            { date: '2025-02-17', name: "Presidents Day" },
+            { date: '2025-04-18', name: "Good Friday" },
+            { date: '2025-05-26', name: "Memorial Day" },
+            { date: '2025-06-19', name: "Juneteenth" },
+            { date: '2025-07-04', name: "Independence Day" },
+            // Add more holidays as needed
+        ];
 
-<!-- Bootstrap JS (CDN) -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        const taseHolidays = [
+            { date: '2025-03-14', name: "Purim" },
+            { date: '2025-04-13', name: "Passover Eve" },
+            { date: '2025-04-14', name: "Passover" },
+            { date: '2025-04-20', name: "Last Day of Passover" },
+            { date: '2025-05-14', name: "Independence Day" },
+            // Add more holidays as needed
+        ];
 
-<script>
-    const LOCALE_TIME_SETTINGS = { timeZone: "Asia/Jerusalem", minute: "2-digit", hour: "2-digit", hour12: false };
-
-    // NYSE & TASE Holidays (2025-2030)
-    const nyseHolidays = {
-        "2025-01-01": "New Year's Day",
-        "2025-01-20": "Martin Luther King Jr. Day",
-        "2025-02-17": "Presidents' Day",
-        "2025-04-18": "Good Friday",
-        "2025-05-26": "Memorial Day",
-        "2025-06-19": "Juneteenth National Independence Day",
-        "2025-07-04": "Independence Day",
-        "2025-09-01": "Labor Day",
-        "2025-11-27": "Thanksgiving Day",
-        "2025-12-25": "Christmas Day",
-        // Add more holidays until 2030
-    };
-
-    const taseHolidays = {
-        "2025-03-14": "Purim",
-        "2025-04-13": "Passover",
-        "2025-04-14": "Passover",
-        "2025-04-20": "Passover",
-        "2025-05-14": "Independence Day",
-        "2025-06-02": "Shavuot",
-        "2025-07-27": "Tisha B'Av",
-        "2025-09-24": "Yom Kippur",
-        "2025-09-25": "Yom Kippur",
-        "2025-09-26": "Sukkot",
-        // Add more holidays until 2030
-    };
-
-    function updateMarketStatus() {
-        const now = new Date();
-        document.getElementById('current-time').textContent = now.toLocaleTimeString("en-US", { timeZone: "Asia/Jerusalem" });
-
-        const nyseData = getMarketData(now, "NYSE");
-        const taseData = getMarketData(now, "TASE");
-
-        const markets = [nyseData, taseData].sort((a, b) => a.timeUntilOpen - b.timeUntilOpen);
-
-        const marketCards = markets.map(market => `
-            <div class="col-md-6">
-                <div class="card market-card p-3 mb-4">
-                    <h4 class="mb-3"><i class="fas fa-${market.icon}"></i> ${market.name}</h4>
-                    <p class="market-status"><span id="${market.id}-status">${market.statusHTML}</span></p>
-                    <p class="text-muted"><span id="${market.id}-message">${market.message}</span></p>
-                    <p class="text-muted"><span id="${market.id}-absolute">${market.absoluteTime}</span></p>
-                    ${market.holiday ? `<p class="text-muted">Closed for ${market.holiday}</p>` : ''}
-                </div>
-            </div>
-        `).join('');
-
-        document.getElementById('market-cards').innerHTML = marketCards;
-    }
-
-    function getMarketData(date, market) {
-        const isOpen = isMarketOpen(date, market);
-        const { message, absoluteTime, timeUntilOpen } = getMarketMessage(date, market);
-        const icon = market === "NYSE" ? "building" : "landmark";
-        const name = market === "NYSE" ? "NYSE" : "TASE";
-        const id = market.toLowerCase();
-        const holiday = getHoliday(date, market);
-
-        return {
-            name,
-            icon,
-            id,
-            statusHTML: getStatusHTML(isOpen),
-            message,
-            absoluteTime,
-            timeUntilOpen,
-            holiday
-        };
-    }
-
-    function isMarketOpen(date, market) {
-        const day = date.getDay();
-        const hours = date.getUTCHours();
-        const minutes = date.getUTCMinutes();
-        const currentTime = hours * 60 + minutes;
-        const dateString = date.toISOString().split('T')[0];
-
-        if (market === "NYSE") {
-            if (nyseHolidays[dateString] || day === 0 || day === 6) return false;
-            return currentTime >= 870 && currentTime < 1260; // 14:30 - 21:00 UTC (9:30 AM - 4:00 PM NY time)
-        } else if (market === "TASE") {
-            if (taseHolidays[dateString] || day === 5 || day === 6) return false;
-            return currentTime >= 420 && currentTime < 925; // 7:00 - 15:25 UTC (9:00 AM - 5:25 PM Israel time)
-        }
-        return false;
-    }
-
-    function getStatusHTML(isOpen) {
-        return `<span class="status-indicator ${isOpen ? 'bg-success' : 'bg-danger'}"></span> ${isOpen ? 'Open' : 'Closed'}`;
-    }
-
-    function getMarketMessage(date, market) {
-        const openingTime = market === "NYSE" ? 870 : 420;
-        const closingTime = market === "NYSE" ? 1260 : 925;
-        let nextOpen = new Date(date);
-        nextOpen.setUTCHours(Math.floor(openingTime / 60), openingTime % 60, 0, 0);
-
-        if (date.getUTCHours() * 60 + date.getUTCMinutes() >= closingTime) {
-            nextOpen.setDate(nextOpen.getDate() + 1);
-        }
-        
-        while (!isMarketOpen(nextOpen, market)) {
-            nextOpen.setDate(nextOpen.getDate() + 1);
+        function isHoliday(date, holidays) {
+            const dateString = date.toISOString().split('T')[0];
+            const holiday = holidays.find(h => h.date === dateString);
+            return holiday ? holiday.name : null;
         }
 
-        const timeUntilOpen = (nextOpen - date) / (1000 * 60);
-        const absoluteTime = `Opens at ${convertToJerusalemTime(nextOpen).toLocaleTimeString("en-US", LOCALE_TIME_SETTINGS)} on ${convertToJerusalemTime(nextOpen).toLocaleDateString("en-GB", { timeZone: "Asia/Jerusalem", dateStyle: "short" })}`;
-        const message = `Opens in ${Math.floor(timeUntilOpen / 60)}h ${Math.floor(timeUntilOpen % 60)}m`;
+        function getMarketInfo(nyTime, jlmTime) {
+            const markets = [];
+            
+            // NYSE Status
+            const nyHours = nyTime.getHours();
+            const nyMinutes = nyTime.getMinutes();
+            const nyTotalMinutes = nyHours * 60 + nyMinutes;
+            const nyseHoliday = isHoliday(nyTime, nyseHolidays);
+            
+            let nyseStatus = {
+                name: 'NYSE',
+                icon: 'fa-building-columns',
+                isOpen: false,
+                holiday: nyseHoliday,
+                nextOpenTime: null,
+                closeTime: null,
+                timeRemaining: null,
+                sortPriority: 0,
+                timezone: 'NY'
+            };
 
-        return { message, absoluteTime, timeUntilOpen };
-    }
+            if (!nyseHoliday && nyTime.getDay() !== 0 && nyTime.getDay() !== 6) {
+                nyseStatus.isOpen = nyTotalMinutes >= 570 && nyTotalMinutes < 960; // 9:30 AM - 4:00 PM
+                if (nyseStatus.isOpen) {
+                    const closeTime = new Date(nyTime);
+                    closeTime.setHours(16, 0, 0, 0);
+                    nyseStatus.closeTime = closeTime;
+                    nyseStatus.timeRemaining = closeTime - nyTime;
+                } else {
+                    let nextOpen = new Date(nyTime);
+                    nextOpen.setHours(9, 30, 0, 0);
+                    if (nyTotalMinutes >= 960) {
+                        nextOpen.setDate(nextOpen.getDate() + 1);
+                    }
+                    while (nextOpen.getDay() === 0 || nextOpen.getDay() === 6 || isHoliday(nextOpen, nyseHolidays)) {
+                        nextOpen.setDate(nextOpen.getDate() + 1);
+                    }
+                    nyseStatus.nextOpenTime = nextOpen;
+                    nyseStatus.timeRemaining = nextOpen - nyTime;
+                }
+            }
 
-    function getHoliday(date, market) {
-        const dateString = date.toISOString().split('T')[0];
-        if (market === "NYSE" && nyseHolidays[dateString]) {
-            return nyseHolidays[dateString];
-        } else if (market === "TASE" && taseHolidays[dateString]) {
-            return taseHolidays[dateString];
+            // TASE Status
+            const taseHours = jlmTime.getHours();
+            const taseMinutes = jlmTime.getMinutes();
+            const taseTotalMinutes = taseHours * 60 + taseMinutes;
+            const taseHoliday = isHoliday(jlmTime, taseHolidays);
+            
+            let taseStatus = {
+                name: 'TASE',
+                icon: 'fa-shekel-sign',
+                isOpen: false,
+                holiday: taseHoliday,
+                nextOpenTime: null,
+                closeTime: null,
+                timeRemaining: null,
+                sortPriority: 0,
+                timezone: 'TLV'
+            };
+
+            if (!taseHoliday && jlmTime.getDay() !== 5 && jlmTime.getDay() !== 6) {
+                taseStatus.isOpen = taseTotalMinutes >= 540 && taseTotalMinutes < 990; // 9:00 AM - 4:30 PM
+                if (taseStatus.isOpen) {
+                    const closeTime = new Date(jlmTime);
+                    closeTime.setHours(16, 30, 0, 0);
+                    taseStatus.closeTime = closeTime;
+                    taseStatus.timeRemaining = closeTime - jlmTime;
+                } else {
+                    let nextOpen = new Date(jlmTime);
+                    nextOpen.setHours(9, 0, 0, 0);
+                    if (taseTotalMinutes >= 990) {
+                        nextOpen.setDate(nextOpen.getDate() + 1);
+                    }
+                    while (nextOpen.getDay() === 5 || nextOpen.getDay() === 6 || isHoliday(nextOpen, taseHolidays)) {
+                        nextOpen.setDate(nextOpen.getDate() + 1);
+                    }
+                    taseStatus.nextOpenTime = nextOpen;
+                    taseStatus.timeRemaining = nextOpen - jlmTime;
+                }
+            }
+
+            // Set sort priorities
+            nyseStatus.sortPriority = nyseStatus.isOpen ? 0 : (nyseStatus.timeRemaining || Infinity);
+            taseStatus.sortPriority = taseStatus.isOpen ? 0 : (taseStatus.timeRemaining || Infinity);
+
+            return [nyseStatus, taseStatus].sort((a, b) => a.sortPriority - b.sortPriority);
         }
-        return null;
-    }
 
-    function convertToJerusalemTime(date) {
-        return new Date(date.toLocaleString("en-US", { timeZone: "Asia/Jerusalem" }));
-    }
+        function formatTimeRemaining(ms) {
+            const hours = Math.floor(ms / (1000 * 60 * 60));
+            const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+            return `${hours}h ${minutes}m`;
+        }
 
-    setInterval(updateMarketStatus, 1000);
-    updateMarketStatus();
-</script>
+        function formatTime(date) {
+            return date.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
 
+        function updateMarkets() {
+            const jlmTime = new Date();
+            const nyTime = new Date(jlmTime.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+            const markets = getMarketInfo(nyTime, jlmTime);
+            
+            const container = document.getElementById('marketsContainer');
+            container.innerHTML = '';
+
+            markets.forEach(market => {
+                const timeDisplay = market.isOpen
+                    ? `Closes at ${formatTime(market.closeTime)} (${formatTimeRemaining(market.timeRemaining)} remaining)`
+                    : market.nextOpenTime
+                        ? `Opens at ${formatTime(market.nextOpenTime)} (in ${formatTimeRemaining(market.timeRemaining)})`
+                        : 'Closed';
+
+                const html = `
+                    <div class="col-md-6 mb-3">
+                        <div class="card market-card h-100">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="fas ${market.icon} fa-lg me-2"></i>
+                                    <h5 class="mb-0">${market.name}</h5>
+                                </div>
+                                <div class="market-info">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <span class="status-indicator ${market.isOpen ? 'bg-success' : 'bg-danger'}"></span>
+                                        <span class="badge ${market.isOpen ? 'bg-success' : 'bg-danger'} me-2">
+                                            ${market.isOpen ? 'Open' : 'Closed'}
+                                        </span>
+                                        ${market.holiday ? `<span class="badge bg-warning text-dark">${market.holiday}</span>` : ''}
+                                    </div>
+                                    <div class="ms-1">
+                                        ${timeDisplay}
+                                        <span class="time-zone">
+                                            (${market.timezone} time)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        // Update immediately and then every second
+        updateMarkets();
+        setInterval(updateMarkets, 1000);
+    </script>
 </body>
 </html>
