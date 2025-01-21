@@ -37,6 +37,10 @@
             <i class="fas fa-globe me-2"></i>
             Market Status Monitor
         </h4>
+        <div class="current-time mb-4">
+            <i class="far fa-clock me-2"></i>
+            JLM Time: <span id="jlmClock">00:00:00</span>
+        </div>
         <div class="row" id="marketsContainer">
             <!-- Markets will be dynamically inserted here -->
         </div>
@@ -217,9 +221,24 @@
             });
         }
 
-        // Update immediately and then every second
+        function updateClock() {
+            const jlmTime = new Date().toLocaleTimeString('en-US', {
+                timeZone: 'Asia/Jerusalem',
+                hour12: false,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('jlmClock').textContent = jlmTime;
+        }
+
+         // Update immediately and then every second
+         updateClock();
         updateMarkets();
-        setInterval(updateMarkets, 1000);
+        setInterval(() => {
+            updateClock();
+            updateMarkets();
+        }, 1000);
     </script>
 </body>
 </html>
