@@ -141,12 +141,15 @@
                 taseStatus.isOpen = taseTotalMinutes >= 540 && taseTotalMinutes < 990; // 9:00 AM - 4:30 PM
                 if (taseStatus.isOpen) {
                     const closeTime = new Date(jlmTime);
-                    closeTime.setHours(16, 30, 0, 0);
+                    if (jlmTime.getDay() == 0) // Sunday
+                        closeTime.setHours(15, 50, 0, 0);
+                    else
+                        closeTime.setHours(17, 25, 0, 0);
                     taseStatus.closeTime = closeTime;
                     taseStatus.timeRemaining = closeTime - jlmTime;
                 } else {
                     let nextOpen = new Date(jlmTime);
-                    nextOpen.setHours(9, 0, 0, 0);
+                    nextOpen.setHours(10, 0, 0, 0);
                     if (taseTotalMinutes >= 990) {
                         nextOpen.setDate(nextOpen.getDate() + 1);
                     }
