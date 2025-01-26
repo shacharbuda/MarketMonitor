@@ -187,14 +187,22 @@
             // Show date only if it's not today
             const isShowDate = new Date().getDate() !== utc_date.getDate();
             const isTomorrow = new Date().getDate() + 1 === utc_date.getDate();
-            const extra_str = isShowDate ? (isTomorrow ? "Tomorrow" : utc_date.toLocaleDateString('en-IL', {day:"2-digit", month:"2-digit"})) : {} ;
+            let extra_str = '';
+            if (isShowDate) {
+                if (isTomorrow) 
+                    extra_str = "tomorrow";
+                else 
+                    extra_str = `on ${utc_date.toLocaleDateString('en-IL', { day: "2-digit", month: "2-digit" })}`;
+                extra_str = `${extra_str} at `;
+            }
+            
 
-            return utc_date.toLocaleTimeString('en-IL', {
+            return extra_str + utc_date.toLocaleTimeString('en-IL', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
                 timeZone: "Asia/Jerusalem",
-            }) + " " + extra_str;
+            });
         }
 
         function updateMarkets() {
@@ -207,9 +215,9 @@
 
             markets.forEach(market => {
                 const timeDisplay = market.isOpen
-                    ? `Closes at ${formatTime(market.closeTime, market.timezone)} (${formatTimeRemaining(market.timeRemaining)} remaining)`
+                    ? `Closes ${formatTime(market.closeTime, market.timezone)} (${formatTimeRemaining(market.timeRemaining)} remaining)`
                     : market.nextOpenTime
-                        ? `Opens at ${formatTime(market.nextOpenTime, market.timezone)} (in ${formatTimeRemaining(market.timeRemaining)})`
+                        ? `Opens ${formatTime(market.nextOpenTime, market.timezone)} (in ${formatTimeRemaining(market.timeRemaining)})`
                         : 'Closed';
 
                 const html = `
