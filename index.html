@@ -98,8 +98,9 @@
                 timezone: 'NY'
             };
 
-            if (!nyseHoliday && nyTime.getDay() !== 0 && nyTime.getDay() !== 6) {
-                nyseStatus.isOpen = nyTotalMinutes >= 570 && nyTotalMinutes < 960; // 9:30 AM - 4:00 PM
+            if (!nyseHoliday) {
+                const isNyseWeekend = nyTime.getDay() == 0 || nyTime.getDay() == 6
+                nyseStatus.isOpen = !isNyseWeekend && nyTotalMinutes >= 570 && nyTotalMinutes < 960; // 9:30 AM - 4:00 PM
                 if (nyseStatus.isOpen) {
                     const closeTime = new Date(nyTime);
                     closeTime.setHours(16, 0, 0, 0);
@@ -137,8 +138,9 @@
                 timezone: 'TLV'
             };
 
-            if (!taseHoliday && jlmTime.getDay() !== 5 && jlmTime.getDay() !== 6) {
-                taseStatus.isOpen = taseTotalMinutes >= 540 && taseTotalMinutes < 990; // 9:00 AM - 4:30 PM
+            if (!taseHoliday) {
+                const isTaseWeekend = jlmTime.getDay() == 5 || jlmTime.getDay() == 6;
+                taseStatus.isOpen = !isTaseWeekend && taseTotalMinutes >= 540 && taseTotalMinutes < 990; // 9:00 AM - 4:30 PM
                 if (taseStatus.isOpen) {
                     const closeTime = new Date(jlmTime);
                     if (jlmTime.getDay() == 0) // Sunday
@@ -182,12 +184,17 @@
             const utc_time = date.getTime() - offset;
             const utc_date = new Date(utc_time);
 
-            return utc_date.toLocaleTimeString('en-US', {
+            // Show date only if it's not today
+            const isShowDate = new Date().getDate() !== utc_date.getDate();
+            const isTomorrow = new Date().getDate() + 1 === utc_date.getDate();
+            const extra_str = isShowDate ? (isTomorrow ? "Tomorrow" : utc_date.toLocaleDateString('en-IL', {day:"2-digit", month:"2-digit"})) : {} ;
+
+            return utc_date.toLocaleTimeString('en-IL', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
-                timeZone: "Asia/Jerusalem"
-            });
+                timeZone: "Asia/Jerusalem",
+            }) + " " + extra_str;
         }
 
         function updateMarkets() {
