@@ -140,13 +140,13 @@
 
             if (!taseHoliday) {
                 const isTaseWeekend = jlmTime.getDay() == 5 || jlmTime.getDay() == 6;
-                taseStatus.isOpen = !isTaseWeekend && taseTotalMinutes >= 540 && taseTotalMinutes < 990; // 9:00 AM - 4:30 PM
+                const closeTime = new Date(jlmTime);
+                if (jlmTime.getDay() == 0) // Sunday
+                    closeTime.setHours(15, 50, 0, 0);
+                else
+                    closeTime.setHours(17, 25, 0, 0);
+                taseStatus.isOpen = !isTaseWeekend && taseTotalMinutes >= 600 && taseTotalMinutes < (closeTime.getHours() * 60 + closeTime.getMinutes()); // 10:00 AM - closeTime
                 if (taseStatus.isOpen) {
-                    const closeTime = new Date(jlmTime);
-                    if (jlmTime.getDay() == 0) // Sunday
-                        closeTime.setHours(15, 50, 0, 0);
-                    else
-                        closeTime.setHours(17, 25, 0, 0);
                     taseStatus.closeTime = closeTime;
                     taseStatus.timeRemaining = closeTime - jlmTime;
                 } else {
